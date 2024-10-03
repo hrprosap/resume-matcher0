@@ -55,6 +55,10 @@ export default function Home() {
     } catch (error) {
       console.error('Error processing emails:', error);
       alert(`An error occurred while processing emails: ${error.message}`);
+      // If the error is due to authentication, redirect to the Google auth page
+      if (error.message.includes('authentication') || error.message.includes('token')) {
+        window.location.href = '/api/auth/google';
+      }
     } finally {
       setIsProcessing(false);
     }

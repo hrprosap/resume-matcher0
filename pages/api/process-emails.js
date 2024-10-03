@@ -30,10 +30,17 @@ export default async function handler(req, res) {
     console.log('Active job description found:', jobDescription);
 
     const gmail = await getGmailService(req, res);
-    const response = await gmail.users.messages.list({
-      userId: 'me',
-      q: `subject:${jobDescription.title}`,
-    });
+    let response;
+    try {
+      response = await gmail.users.messages.list({
+        userId: 'me',
+        q: `subject:${jobDescription.title}`,
+      });
+      console.log('Gmail API response:', JSON.stringify(response, null, 2));
+    } catch (error) {
+      console.error('Error fetching emails from Gmail:', error);
+      return res.status(500).json({ error: 'Failed to fetch emails from Gmail' });
+    }
 
     const messages = response.data.messages || [];
     console.log(`Found ${messages.length} emails matching the job title.`);
