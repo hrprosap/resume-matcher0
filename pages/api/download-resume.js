@@ -13,6 +13,10 @@ export default async function handler(req, res) {
     const emailContent = await getEmailContent(gmail, emailId);
     const resumeText = await extractResumeText(emailContent);
 
+    if (!resumeText) {
+      return res.status(404).json({ error: 'No resume content found' });
+    }
+
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', `attachment; filename="resume_${emailId}.txt"`);
     res.status(200).send(resumeText);
