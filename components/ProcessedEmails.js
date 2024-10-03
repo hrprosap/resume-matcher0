@@ -13,14 +13,13 @@ const ProcessedEmails = ({ emails }) => {
             <p><strong className="text-gray-700">Job Title:</strong> {email.jobTitle}</p>
             <p><strong className="text-gray-700">Score:</strong> <span className="text-lg font-semibold">{email.score}</span></p>
           </div>
-          <p className="mb-4"><strong className="text-gray-700">Resume Text:</strong> <span className="text-gray-600">{email.resumeText.substring(0, 100)}...</span></p>
           <a 
             href={`/api/download-resume?emailId=${email.emailId}`} 
             className="text-blue-500 hover:text-blue-700 font-medium"
             target="_blank" 
             rel="noopener noreferrer"
           >
-            Download Resume
+            View Resume
           </a>
         </div>
       ))}
