@@ -3,6 +3,7 @@ import { getGmailService, getEmailContent, getEmailMetadata } from '../../lib/gm
 import { connectToDatabase } from '../../lib/mongodb';
 import { getResumeScore } from '../../lib/openai';
 import { simpleParser } from 'mailparser';
+import { ObjectId } from 'mongodb'; // Assuming MongoDB ObjectId is needed
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,7 +15,12 @@ export default async function handler(req, res) {
     const db = await connectToDatabase();
     console.log('Connected to database. Searching for active job description...');
 
-    const jobDescription = await db.collection('jobs').findOne({ active: true });
+    const { activeJobId } = req.body;
+    if (!activeJobId) {
+      return res.status(400).json({ error: 'No active job ID provided' });
+    }
+
+    const jobDescription = await db.collection('jobs').findOne({ _id: ObjectId(activeJobId) });
 
     if (!jobDescription) {
       console.log('No active job description found in the database.');
@@ -35,40 +41,49 @@ export default async function handler(req, res) {
     const processedEmails = [];
 
     for (const message of messages) {
-      // Check if the email has already been processed
-      const existingApplication = await db.collection('applications').findOne({ emailId: message.id });
+      try {
+        const existingApplication = await db.collection('applications').findOne({ emailId: message.id });
 
-      if (existingApplication) {
-        console.log(`Email ${message.id} has already been processed. Skipping.`);
-        processedEmails.push(existingApplication);
-        continue;
-      }
+        if (existingApplication && existingApplication.score !== undefined) {
+          console.log(`Email ${message.id} has already been processed. Using stored score.`);
+          processedEmails.push(existingApplication);
+          continue;
+        }
 
-      const emailContent = await getEmailContent(message.id);
-      const emailMetadata = await getEmailMetadata(message.id);
-      const resumeText = await extractResumeText(emailContent);
+        const emailContent = await getEmailContent(message.id);
+        const emailMetadata = await getEmailMetadata(message.id);
+        const resumeText = await extractResumeText(emailContent);
 
-      console.log('Resume Text:', resumeText.substring(0, 200) + '...');
-      console.log('Job Description:', jobDescription.description.substring(0, 200) + '...');
+        console.log('Resume Text:', resumeText.substring(0, 200) + '...');
+        console.log('Job Description:', jobDescription.description.substring(0, 200) + '...');
 
-      const score = await getResumeScore(resumeText, jobDescription.description);
-      console.log(`Email ${message.id} received a score of ${score}`);
+        const score = await getResumeScore(resumeText, jobDescription.description, db, message.id);
+        console.log(`Email ${message.id} received a score of ${score}`);
 
-      const applicationData = {
-        emailId: message.id,
-        applicantEmail: emailMetadata.from,
-        jobTitle: jobDescription.title,
-        score: score,
-        resumeText: resumeText,
-        timestamp: new Date(),
-      };
+        const applicationData = {
+          emailId: message.id,
+          applicantEmail: emailMetadata.from,
+          jobTitle: jobDescription.title,
+          score: score,
+          resumeText: resumeText,
+          timestamp: new Date(),
+          jobId: jobDescription._id // Add this line to associate the application with the job
+        };
 
-      await db.collection('applications').insertOne(applicationData);
-      processedEmails.push(applicationData);
+        await db.collection('applications').updateOne(
+          { emailId: message.id },
+          { $set: applicationData },
+          { upsert: true }
+        );
+        processedEmails.push(applicationData);
 
-      if (score >= 7) {
-        console.log(`Forwarding email ${message.id} to HR (score: ${score})`);
-        // Implement email forwarding logic here
+        if (score >= 7) {
+          console.log(`Forwarding email ${message.id} to HR (score: ${score})`);
+          // Implement email forwarding logic here
+        }
+      } catch (emailError) {
+        console.error(`Error processing email ${message.id}:`, emailError);
+        // Consider adding this email to a list of failed processes
       }
     }
 

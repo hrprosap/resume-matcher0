@@ -1,4 +1,5 @@
 import { connectToDatabase } from '../../lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,21 +8,28 @@ export default async function handler(req, res) {
 
   try {
     const db = await connectToDatabase();
-    
-    // Deactivate all existing job descriptions
-    await db.collection('jobs').updateMany({}, { $set: { active: false } });
+    const { id, title, description, active } = req.body;
 
-    // Add new job description
-    const result = await db.collection('jobs').insertOne({
-      title: req.body.title,
-      description: req.body.description,
-      active: true,
-      createdAt: new Date()
-    });
-
-    res.status(200).json({ message: 'Job description added successfully', id: result.insertedId });
+    if (id) {
+      // Update existing job
+      const result = await db.collection('jobs').updateOne(
+        { _id: ObjectId(id) },
+        { $set: { title, description, active, updatedAt: new Date() } }
+      );
+      res.status(200).json({ message: 'Job description updated successfully', id });
+    } else {
+      // Add new job
+      const result = await db.collection('jobs').insertOne({
+        title,
+        description,
+        active: active || false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      res.status(200).json({ message: 'Job description added successfully', id: result.insertedId });
+    }
   } catch (error) {
-    console.error('Error adding job description:', error);
-    res.status(500).json({ error: error.message || 'An error occurred while adding job description' });
+    console.error('Error adding/updating job description:', error);
+    res.status(500).json({ error: error.message || 'An error occurred while adding/updating job description' });
   }
 }
