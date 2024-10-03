@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ApplicationList from '../components/ApplicationList';
 import ProcessedEmails from '../components/ProcessedEmails';
 import JobList from '../components/JobList';
+import { parseCookies } from 'nookies';
 
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -10,9 +11,15 @@ export default function Home() {
   const [processedEmails, setProcessedEmails] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [activeJobId, setActiveJobId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    const cookies = parseCookies();
+    setIsAuthenticated(!!cookies.access_token);
   }, []);
 
   const fetchJobs = async () => {
@@ -117,12 +124,14 @@ export default function Home() {
             {isProcessing ? 'Processing...' : 'Process New Emails'}
           </button>
           
-          <button
-            onClick={() => window.location.href = '/api/auth/google'}
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded w-full mb-4"
-          >
-            Authenticate with Google
-          </button>
+          {!isAuthenticated && (
+            <button
+              onClick={() => window.location.href = '/api/auth/google'}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded w-full mb-4"
+            >
+              Authenticate with Google
+            </button>
+          )}
         </div>
       </div>
       

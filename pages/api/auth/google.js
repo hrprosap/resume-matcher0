@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { setCookie } from 'nookies';
 
 export default async function handler(req, res) {
   const redirectUri = process.env.GMAIL_REDIRECT_URI;
@@ -10,20 +11,33 @@ export default async function handler(req, res) {
   );
 
   if (req.method === 'GET') {
-    const authUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/gmail.readonly'],
-    });
-    res.redirect(authUrl);
-  } else if (req.method === 'POST') {
-    const { code } = req.body;
-    try {
-      const { tokens } = await oauth2Client.getToken(code);
-      // Here, you would typically store these tokens securely (e.g., in a database)
-      // For this example, we'll just send them back to the client
-      res.status(200).json(tokens);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to retrieve tokens' });
+    const { code } = req.query;
+    if (code) {
+      try {
+        const { tokens } = await oauth2Client.getToken(code);
+        // Here, you should securely store these tokens (e.g., in a database)
+        // For now, we'll just set them as cookies
+        setCookie({ res }, 'access_token', tokens.access_token, {
+          maxAge: tokens.expiry_date,
+          httpOnly: true,
+          path: '/',
+        });
+        setCookie({ res }, 'refresh_token', tokens.refresh_token, {
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          httpOnly: true,
+          path: '/',
+        });
+        res.redirect('/'); // Redirect to your app's homepage
+      } catch (error) {
+        console.error('Error getting tokens:', error);
+        res.redirect('/?auth=error');
+      }
+    } else {
+      const authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/gmail.readonly'],
+      });
+      res.redirect(authUrl);
     }
   } else {
     res.status(405).end();
