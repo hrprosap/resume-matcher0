@@ -34,7 +34,8 @@ export default async function handler(req, res) {
     try {
       response = await gmail.users.messages.list({
         userId: 'me',
-        q: `subject:${jobDescription.title}`,
+        q: `subject:${jobDescription.title} is:unread`,
+        maxResults: 10 // Adjust this number as needed
       });
       console.log('Gmail API response:', JSON.stringify(response, null, 2));
     } catch (error) {
@@ -47,8 +48,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Unexpected response from Gmail API' });
     }
 
-    const messages = response.data.messages;
-    console.log(`Found ${messages.length} emails matching the job title.`);
+    const messages = response.data.messages || [];
+    console.log(`Found ${messages.length} new emails matching the job title.`);
 
     const processedEmails = [];
 
@@ -93,6 +94,15 @@ export default async function handler(req, res) {
           console.log(`Forwarding email ${message.id} to HR (score: ${score})`);
           // Implement email forwarding logic here
         }
+
+        // Mark the email as read after processing
+        await gmail.users.messages.modify({
+          userId: 'me',
+          id: message.id,
+          requestBody: {
+            removeLabelIds: ['UNREAD']
+          }
+        });
       } catch (emailError) {
         console.error(`Error processing email ${message.id}:`, emailError);
         // Consider adding this email to a list of failed processes
