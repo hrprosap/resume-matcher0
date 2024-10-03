@@ -42,7 +42,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to fetch emails from Gmail' });
     }
 
-    const messages = response.data.messages || [];
+    if (!response || !response.data || !Array.isArray(response.data.messages)) {
+      console.error('Unexpected response structure from Gmail API:', response);
+      return res.status(500).json({ error: 'Unexpected response from Gmail API' });
+    }
+
+    const messages = response.data.messages;
     console.log(`Found ${messages.length} emails matching the job title.`);
 
     const processedEmails = [];
