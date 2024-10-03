@@ -57,8 +57,13 @@ export default function Home() {
         throw new Error(data.error || 'Failed to process emails');
       }
       setProcessedEmails(data.processedEmails);
-      console.log(`Processed ${data.processedEmails.length} emails successfully.`);
-      alert(`Processed ${data.processedEmails.length} emails successfully.`);
+      if (data.processedEmails.length === 0) {
+        console.log("No applicants found for this job posting");
+        alert("No applicants found for this job posting.");
+      } else {
+        console.log(`${data.message} ${data.processedEmails.length} applicants found.`);
+        alert(`${data.message} ${data.processedEmails.length} applicants found.`);
+      }
     } catch (error) {
       console.error('Error processing emails:', error);
       alert(`An error occurred while processing emails: ${error.message}`);
