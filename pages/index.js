@@ -80,7 +80,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Resume Matcher Dashboard</h1>
-      
+      <ProcessedEmails emails={processedEmails} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <h2 className="text-2xl font-semibold mb-4 text-gray-700">Job Postings</h2>
@@ -115,6 +115,13 @@ export default function Home() {
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded w-full mb-8 disabled:opacity-50"
           >
             {isProcessing ? 'Processing...' : 'Process New Emails'}
+          </button>
+          
+          <button
+            onClick={() => window.location.href = '/api/auth/google'}
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded w-full mb-4"
+          >
+            Authenticate with Google
           </button>
         </div>
       </div>
