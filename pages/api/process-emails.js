@@ -3,7 +3,7 @@ import { getGmailService, getEmailContent, getEmailMetadata } from '../../lib/gm
 import { connectToDatabase } from '../../lib/mongodb';
 import { getResumeScore } from '../../lib/openai';
 import { simpleParser } from 'mailparser';
-import { ObjectId } from 'mongodb'; // Assuming MongoDB ObjectId is needed
+import { ObjectId } from 'mongodb';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     console.log('Active job description found:', jobDescription);
 
-    const gmail = await getGmailService();
+    const gmail = await getGmailService(req);
     const response = await gmail.users.messages.list({
       userId: 'me',
       q: `subject:${jobDescription.title}`,

@@ -35,6 +35,10 @@ export default function Home() {
   };
 
   const handleProcessEmails = async () => {
+    if (!isAuthenticated) {
+      alert("Please authenticate with Google first.");
+      return;
+    }
     if (!activeJobId) {
       alert("Please activate a job posting before processing emails.");
       return;

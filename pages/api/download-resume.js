@@ -9,7 +9,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const emailContent = await getEmailContent(emailId);
+    const gmail = await getGmailService(req);
+    const emailContent = await getEmailContent(gmail, emailId);
     const resumeText = await extractResumeText(emailContent);
 
     res.setHeader('Content-Type', 'text/plain');
