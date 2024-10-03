@@ -30,15 +30,19 @@ export default function Home() {
 
   const handleProcessEmails = async () => {
     if (!isAuthenticated) {
+      console.log("Not authenticated, showing alert");
       alert("Please authenticate with Google first.");
       return;
     }
     if (!activeJobId) {
+      console.log("No active job selected, showing alert");
       alert("Please select an active job first.");
       return;
     }
+    console.log("Starting email processing...");
     setIsProcessing(true);
     try {
+      console.log("Sending request to /api/process-emails");
       const response = await fetch('/api/process-emails', {
         method: 'POST',
         headers: {
@@ -46,17 +50,20 @@ export default function Home() {
         },
         body: JSON.stringify({ activeJobId }),
       });
+      console.log("Received response from /api/process-emails");
       const data = await response.json();
+      console.log("Response data:", data);
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process emails');
       }
       setProcessedEmails(data.processedEmails);
+      console.log(`Processed ${data.processedEmails.length} emails successfully.`);
       alert(`Processed ${data.processedEmails.length} emails successfully.`);
     } catch (error) {
       console.error('Error processing emails:', error);
       alert(`An error occurred while processing emails: ${error.message}`);
-      // If the error is due to authentication, redirect to the Google auth page
       if (error.message.includes('authentication') || error.message.includes('token')) {
+        console.log("Redirecting to Google auth due to authentication error");
         window.location.href = '/api/auth/google';
       }
     } finally {

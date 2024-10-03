@@ -6,7 +6,12 @@ import { simpleParser } from 'mailparser';
 import { ObjectId } from 'mongodb';
 
 export default async function handler(req, res) {
+  console.log('Process emails handler called');
+  console.log('Request method:', req.method);
+  console.log('Request body:', req.body);
+
   if (req.method !== 'POST') {
+    console.log('Method not allowed');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -17,19 +22,24 @@ export default async function handler(req, res) {
 
     const { activeJobId } = req.body;
     if (!activeJobId) {
+      console.log('No active job ID provided');
       return res.status(400).json({ error: 'No active job ID provided' });
     }
 
+    console.log('Fetching job description for ID:', activeJobId);
     const jobDescription = await db.collection('jobs').findOne({ _id: ObjectId(activeJobId) });
 
     if (!jobDescription) {
-      console.log('No active job description found in the database.');
-      return res.status(404).json({ error: 'No active job description found' });
+      console.log('No job description found for ID:', activeJobId);
+      return res.status(404).json({ error: 'No job description found for the provided ID' });
     }
 
-    console.log('Active job description found:', jobDescription);
+    console.log('Job description found:', jobDescription);
 
-    const gmail = await getGmailService(req, res);
+    console.log('Initializing Gmail service...');
+    const gmail = await getGmailService(req);
+    console.log('Gmail service initialized');
+
     let response;
     try {
       response = await gmail.users.messages.list({
