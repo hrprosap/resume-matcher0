@@ -63,8 +63,8 @@ export default async function handler(req, res) {
           continue;
         }
 
-        const emailContent = await getEmailContent(message.id);
-        const emailMetadata = await getEmailMetadata(message.id);
+        const emailContent = await getEmailContent(gmail, message.id);
+        const emailMetadata = await getEmailMetadata(gmail, message.id);
         const resumeText = await extractResumeText(emailContent);
 
         console.log('Resume Text:', resumeText.substring(0, 200) + '...');
