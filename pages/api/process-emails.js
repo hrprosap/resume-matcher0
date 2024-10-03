@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     console.log('Active job description found:', jobDescription);
 
-    const gmail = await getGmailService(req);
+    const gmail = await getGmailService(req, res);
     const response = await gmail.users.messages.list({
       userId: 'me',
       q: `subject:${jobDescription.title}`,
