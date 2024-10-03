@@ -1,6 +1,5 @@
 import { getGmailService, getEmailContent } from '../../lib/gmail';
-import { extractResumeText } from '../../lib/emailParser';
-import { parseCookies } from 'nookies';
+import { extractResumeAttachment } from '../../lib/emailParser';
 
 export default async function handler(req, res) {
   const { emailId } = req.query;
@@ -10,24 +9,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const cookies = parseCookies({ req });
-    const accessToken = cookies.access_token;
-
-    if (!accessToken) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
     const gmail = await getGmailService(req);
     const emailContent = await getEmailContent(gmail, emailId);
-    const resumeUrl = await extractResumeText(emailContent, gmail);
+    const attachment = await extractResumeAttachment(emailContent, gmail);
 
-    if (!resumeUrl) {
+    if (!attachment) {
       return res.status(404).json({ error: 'No resume attachment found' });
     }
 
-    // Redirect to the resume URL with the access token
-    const urlWithToken = `${resumeUrl}&access_token=${accessToken}`;
-    res.redirect(urlWithToken);
+    // Convert base64url to base64
+    const base64Data = attachment.data.replace(/-/g, '+').replace(/_/g, '/');
+
+    res.setHeader('Content-Type', attachment.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename}"`);
+    res.send(Buffer.from(base64Data, 'base64'));
   } catch (error) {
     console.error('Error downloading resume:', error);
     res.status(500).json({ error: 'An error occurred while downloading the resume' });
