@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     const db = await connectToDatabase();
     const processedEmails = await db.collection('applications')
-      .find({})
+      .find({ jobId: jobDescription._id }) // Fetch all applications for the specific job
       .sort({ timestamp: -1 })
       .project({
         emailId: 1,

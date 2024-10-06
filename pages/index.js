@@ -12,6 +12,8 @@ export default function Home() {
   const [processedEmails, setProcessedEmails] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [activeJobId, setActiveJobId] = useState(null);
+  const [hrEmail, setHrEmail] = useState('');
+  const [minMatchScore, setMinMatchScore] = useState(7);
 
   useEffect(() => {
     checkAuthStatus();
@@ -111,30 +113,45 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 py-8 max-w-6xl bg-gray-100 rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Resume Matcher Dashboard</h1>
       {!isAuthenticated ? (
         <button
           onClick={handleAuthenticate}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out"
         >
           Authenticate with Google
         </button>
       ) : (
         <>
-          <button
-            onClick={handleProcessEmails}
-            disabled={isProcessing || !activeJobId}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-          >
-            {isProcessing ? 'Processing...' : 'Process New Emails'}
-          </button>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={handleProcessEmails}
+              disabled={isProcessing || !activeJobId}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out disabled:opacity-50"
+            >
+              {isProcessing ? 'Processing...' : 'Process New Emails'}
+            </button>
+            <input
+              type="email"
+              value={hrEmail}
+              onChange={(e) => setHrEmail(e.target.value)}
+              placeholder="Enter HR Email"
+              className="border rounded p-2 w-1/3"
+            />
+            <input
+              type="number"
+              value={minMatchScore}
+              onChange={(e) => setMinMatchScore(e.target.value)}
+              placeholder="Min Match Score"
+              className="border rounded p-2 w-1/4"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h2 className="text-2xl font-semibold mb-4 text-gray-700">Job Postings</h2>
               <JobList jobs={jobs} onJobUpdate={fetchJobs} />
             </div>
-            
             <div>
               <h2 className="text-2xl font-semibold mb-4 text-gray-700">Add New Job</h2>
               <form onSubmit={handleAddJob} className="mb-8 bg-white shadow-md rounded px-8 pt-6 pb-8">
@@ -152,20 +169,14 @@ export default function Home() {
                   className="w-full p-2 border rounded mb-4"
                   rows="4"
                 />
-                <button type="submit" className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full">
+                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full transition duration-300 ease-in-out">
                   Add Job Description
                 </button>
               </form>
             </div>
           </div>
-          
           <div className="mt-12">
             <h2 className="text-2xl font-semibold mb-4 text-gray-700">Applications</h2>
-            <ApplicationList activeJobId={activeJobId} />
-          </div>
-          
-          <div className="mt-12">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-700">Processed Emails</h2>
             <ProcessedEmails emails={processedEmails} />
           </div>
         </>

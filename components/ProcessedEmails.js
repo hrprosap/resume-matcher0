@@ -12,6 +12,8 @@ const ProcessedEmails = ({ emails }) => {
             <p><strong className="text-gray-700">Applicant Email:</strong> {email.applicantEmail}</p>
             <p><strong className="text-gray-700">Job Title:</strong> {email.jobTitle}</p>
             <p><strong className="text-gray-700">Score:</strong> <span className="text-lg font-semibold">{email.score}</span></p>
+            <p><strong className="text-gray-700">Subject Line:</strong> {email.subjectLine}</p>
+            <p><strong className="text-gray-700">Date:</strong> {new Date(email.timestamp).toLocaleString()}</p>
           </div>
           <a 
             href={`/api/download-resume?emailId=${email.emailId}`} 

@@ -42,7 +42,11 @@ export default async function handler(req, res) {
       console.log('Generating auth URL');
       const authUrl = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/gmail.readonly'],
+        scope: [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/gmail.send' // Optional, if sending emails
+        ],
       });
       console.log('Auth URL:', authUrl);
       res.redirect(authUrl);

@@ -4,6 +4,18 @@ import { connectToDatabase } from '../../lib/mongodb';
 import { getResumeScore } from '../../lib/openai';
 import { simpleParser } from 'mailparser';
 import { ObjectId } from 'mongodb';
+import { parseCookies } from 'nookies';
+import { google } from 'googleapis';
+const nodemailer = require('nodemailer'); // Import nodemailer at the top
+
+// Create a transporter for sending emails
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Use Gmail service
+  auth: {
+    user: process.env.GMAIL_USER, // Your Gmail address
+    pass: process.env.GMAIL_PASS, // Your Gmail password or app password
+  },
+});
 
 export default async function handler(req, res) {
   console.log('Process emails handler called');
@@ -44,8 +56,8 @@ export default async function handler(req, res) {
     try {
       response = await gmail.users.messages.list({
         userId: 'me',
-        q: `subject:${jobDescription.title} is:unread`,
-        maxResults: 10 // Adjust this number as needed
+        q: `subject:(${jobDescription.title}) OR subject:(${jobDescription.title.toUpperCase()}) OR subject:(${jobDescription.title.toLowerCase()}) is:unread`, // Updated query for flexible matching
+        maxResults: 100// Adjust this number as needed
       });
       console.log('Gmail API response:', JSON.stringify(response, null, 2));
     } catch (error) {
@@ -73,14 +85,7 @@ export default async function handler(req, res) {
       // Process new emails
       for (const message of messages) {
         try {
-          const existingApplication = await db.collection('applications').findOne({ emailId: message.id });
-
-          if (existingApplication && existingApplication.score !== undefined) {
-            console.log(`Email ${message.id} has already been processed. Using stored score.`);
-            processedEmails.push(existingApplication);
-            continue;
-          }
-
+          // Always fetch the email content and metadata
           const emailContent = await getEmailContent(gmail, message.id);
           const emailMetadata = await getEmailMetadata(gmail, message.id);
           const resumeText = await extractResumeText(emailContent);
@@ -88,6 +93,7 @@ export default async function handler(req, res) {
           console.log('Resume Text:', resumeText.substring(0, 200) + '...');
           console.log('Job Description:', jobDescription.description.substring(0, 200) + '...');
 
+          // Get the score for the resume
           const score = await getResumeScore(resumeText, jobDescription.description, db, message.id);
           console.log(`Email ${message.id} received a score of ${score}`);
 
@@ -95,17 +101,17 @@ export default async function handler(req, res) {
             emailId: message.id,
             applicantEmail: emailMetadata.from,
             jobTitle: jobDescription.title,
+            subjectLine: emailMetadata.subject,
             score: score,
             resumeText: resumeText,
             timestamp: new Date(),
-            jobId: jobDescription._id // Add this line to associate the application with the job
+            jobId: jobDescription._id, // Associate the application with the job
+            applicationId: new ObjectId() // Generate a unique ID for each application
           };
 
-          await db.collection('applications').updateOne(
-            { emailId: message.id },
-            { $set: applicationData },
-            { upsert: true }
-          );
+          // Insert the application into the database
+          await db.collection('applications').insertOne(applicationData);
+
           processedEmails.push(applicationData);
 
           if (score >= 7) {
@@ -121,6 +127,28 @@ export default async function handler(req, res) {
               removeLabelIds: ['UNREAD']
             }
           });
+
+          // Inside the email processing loop
+          if (score >= 7) {
+            const mailOptions = {
+              from: process.env.GMAIL_USER,
+              to: hrEmail,
+              subject: `New Application for ${jobDescription.title}`,
+              text: `A new application has been received:\n\n` +
+                    `Applicant Email: ${emailMetadata.from}\n` +
+                    `Job Title: ${jobDescription.title}\n` +
+                    `Score: ${score}\n` +
+                    `Subject Line: ${emailMetadata.subject}\n\n` +
+                    `Resume Attachment: [Download Here](https://yourdomain.com/api/download-resume?emailId=${message.id})`,
+            };
+
+            try {
+              await transporter.sendMail(mailOptions);
+              console.log(`Email forwarded to HR: ${hrEmail}`);
+            } catch (error) {
+              console.error('Error forwarding email to HR:', error);
+            }
+          }
         } catch (emailError) {
           console.error(`Error processing email ${message.id}:`, emailError);
           // Consider adding this email to a list of failed processes
@@ -129,9 +157,9 @@ export default async function handler(req, res) {
     }
 
     console.log('All emails processed successfully.');
-    res.status(200).json({ 
+    res.status(200).json({
       message: messages.length === 0 ? 'No new emails found. Showing previous applicants.' : 'Emails processed successfully',
-      processedEmails: processedEmails 
+      processedEmails: processedEmails
     });
   } catch (error) {
     console.error('Error processing emails:', error);
