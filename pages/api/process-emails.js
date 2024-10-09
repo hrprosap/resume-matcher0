@@ -4,8 +4,10 @@ import { connectToDatabase } from '../../lib/mongodb';
 import { getResumeScore } from '../../lib/openai';
 import { simpleParser } from 'mailparser';
 import { ObjectId } from 'mongodb';
-import { parseCookies } from 'nookies';
+import { parseCookies, setCookie } from 'nookies';
 import { google } from 'googleapis';
+import { refreshAccessToken } from './auth/google'; // Make sure to export the refreshAccessToken function
+
 const nodemailer = require('nodemailer'); // Import nodemailer at the top
 
 // Create a transporter for sending emails
@@ -28,29 +30,62 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Connecting to database...');
-    const db = await connectToDatabase();
-    console.log('Connected to database. Searching for active job description...');
+    console.log('Initializing Gmail service...');
+    const cookies = parseCookies({ req });
+    const accessToken = cookies.access_token;
+    const refreshToken = cookies.refresh_token;
 
-    const { activeJobId } = req.body;
-    if (!activeJobId) {
-      console.log('No active job ID provided');
-      return res.status(400).json({ error: 'No active job ID provided' });
+    if (!accessToken || !refreshToken) {
+      return res.status(401).json({ error: 'No access token or refresh token found' });
     }
 
-    console.log('Fetching job description for ID:', activeJobId);
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GMAIL_CLIENT_ID,
+      process.env.GMAIL_CLIENT_SECRET,
+      process.env.GMAIL_REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    // Always try to refresh the token before making API calls
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+
+      // Update the cookies with the new tokens
+      setCookie({ res }, 'access_token', credentials.access_token, {
+        maxAge: credentials.expiry_date,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+      if (credentials.refresh_token) {
+        setCookie({ res }, 'refresh_token', credentials.refresh_token, {
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+        });
+      }
+    } catch (refreshError) {
+      console.error('Error refreshing access token:', refreshError);
+      return res.status(401).json({ error: 'Failed to refresh access token' });
+    }
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    console.log('Gmail service initialized');
+
+    // Fetch the job description using activeJobId
+    const db = await connectToDatabase();
+    const { activeJobId } = req.body;
     const jobDescription = await db.collection('jobs').findOne({ _id: ObjectId(activeJobId) });
 
     if (!jobDescription) {
-      console.log('No job description found for ID:', activeJobId);
-      return res.status(404).json({ error: 'No job description found for the provided ID' });
+      return res.status(404).json({ error: 'Job description not found' });
     }
-
-    console.log('Job description found:', jobDescription);
-
-    console.log('Initializing Gmail service...');
-    const gmail = await getGmailService(req);
-    console.log('Gmail service initialized');
 
     let response;
     try {

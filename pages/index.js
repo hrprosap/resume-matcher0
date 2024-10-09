@@ -73,6 +73,11 @@ export default function Home() {
         console.log("Redirecting to Google auth due to authentication error");
         window.location.href = '/api/auth/google';
       }
+      if (response.status === 401) {
+        console.log("Authentication error, redirecting to Google auth");
+        window.location.href = '/api/auth/google';
+        return;
+      }
     } finally {
       setIsProcessing(false);
     }

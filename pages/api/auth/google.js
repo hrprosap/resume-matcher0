@@ -12,6 +12,34 @@ export default async function handler(req, res) {
     redirectUri
   );
 
+  async function refreshAccessToken(oauth2Client) {
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+      
+      // Update the stored tokens
+      setCookie({ res }, 'access_token', credentials.access_token, {
+        maxAge: credentials.expiry_date,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+      if (credentials.refresh_token) {
+        setCookie({ res }, 'refresh_token', credentials.refresh_token, {
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+        });
+      }
+      
+      return credentials.access_token;
+    } catch (error) {
+      console.error('Error refreshing access token:', error);
+      throw error;
+    }
+  }
+
   if (req.method === 'GET') {
     const { code } = req.query;
     if (code) {
