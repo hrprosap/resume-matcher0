@@ -68,15 +68,11 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error processing emails:', error);
-      alert(`An error occurred while processing emails: ${error.message}`);
-      if (error.message.includes('authentication') || error.message.includes('token')) {
-        console.log("Redirecting to Google auth due to authentication error");
-        window.location.href = '/api/auth/google';
-      }
-      if (response.status === 401) {
+      if (error.message.includes('authentication') || error.message.includes('token') || error.response?.status === 401) {
         console.log("Authentication error, redirecting to Google auth");
         window.location.href = '/api/auth/google';
-        return;
+      } else {
+        alert(`An error occurred while processing emails: ${error.message}`);
       }
     } finally {
       setIsProcessing(false);

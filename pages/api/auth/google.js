@@ -48,6 +48,10 @@ export default async function handler(req, res) {
         const { tokens } = await oauth2Client.getToken(code);
         console.log('Received tokens from Google');
         
+        if (!tokens.refresh_token) {
+          throw new Error('No refresh token received');
+        }
+        
         setCookie({ res }, 'access_token', tokens.access_token, {
           maxAge: tokens.expiry_date,
           httpOnly: true,
@@ -70,10 +74,11 @@ export default async function handler(req, res) {
       console.log('Generating auth URL');
       const authUrl = oauth2Client.generateAuthUrl({
         access_type: 'offline',
+        prompt: 'consent',
         scope: [
           'https://www.googleapis.com/auth/gmail.readonly',
           'https://www.googleapis.com/auth/gmail.modify',
-          'https://www.googleapis.com/auth/gmail.send' // Optional, if sending emails
+          'https://www.googleapis.com/auth/gmail.send'
         ],
       });
       console.log('Auth URL:', authUrl);

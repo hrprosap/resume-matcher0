@@ -52,6 +52,9 @@ export default async function handler(req, res) {
 
     // Always try to refresh the token before making API calls
     try {
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
       const { credentials } = await oauth2Client.refreshAccessToken();
       oauth2Client.setCredentials(credentials);
 
@@ -72,7 +75,7 @@ export default async function handler(req, res) {
       }
     } catch (refreshError) {
       console.error('Error refreshing access token:', refreshError);
-      return res.status(401).json({ error: 'Failed to refresh access token' });
+      return res.status(401).json({ error: 'Failed to refresh access token. Please re-authenticate.' });
     }
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
