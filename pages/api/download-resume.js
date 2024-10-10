@@ -25,6 +25,12 @@ export default async function handler(req, res) {
     res.send(Buffer.from(base64Data, 'base64'));
   } catch (error) {
     console.error('Error downloading resume:', error);
-    res.status(500).json({ error: 'An error occurred while downloading the resume' });
+    if (error.code === 404) {
+      res.status(404).json({ error: 'The requested resume is no longer available. It may have been deleted or moved.' });
+    } else if (error.code === 403) {
+      res.status(403).json({ error: 'You do not have permission to access this resume. Please check your authentication.' });
+    } else {
+      res.status(500).json({ error: 'An error occurred while downloading the resume. Please try again later.' });
+    }
   }
 }
