@@ -13,11 +13,19 @@ export default async function handler(req, res) {
     }
   } else if (req.method === 'PUT') {
     try {
-      const { id, active } = req.body;
-      await db.collection('jobs').updateOne(
-        { _id: ObjectId(id) },
-        { $set: { active, updatedAt: new Date() } }
-      );
+      const { id, active, deactivateAll } = req.body;
+      
+      if (deactivateAll) {
+        await db.collection('jobs').updateMany({}, { $set: { active: false } });
+      }
+      
+      if (id) {
+        await db.collection('jobs').updateOne(
+          { _id: ObjectId(id) },
+          { $set: { active, updatedAt: new Date() } }
+        );
+      }
+      
       res.status(200).json({ message: 'Job status updated successfully' });
     } catch (error) {
       res.status(500).json({ error: 'An error occurred while updating job status' });

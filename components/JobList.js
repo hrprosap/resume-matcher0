@@ -1,10 +1,28 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 export default function JobList({ jobs, onJobUpdate }) {
   const [editingJob, setEditingJob] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredJobs = jobs.filter(job =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
 
   const handleStatusChange = async (id, active) => {
     try {
+      if (active) {
+        // Deactivate all other jobs
+        await fetch('/api/jobs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deactivateAll: true }),
+        });
+      }
+      
+      // Update the status of the current job
       await fetch('/api/jobs', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -37,23 +55,64 @@ export default function JobList({ jobs, onJobUpdate }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!editingJob.title || !editingJob.description) {
+      alert('Title and description are required');
+      return;
+    }
+
+    // Ensure the editingJob has an id
+    if (!editingJob._id) {
+      alert('Invalid job ID');
+      return;
+    }
+
+    // Log the editingJob to check its contents
+    console.log('Updating job with data:', editingJob);
+
     try {
-      await fetch('/api/add-job', {
-        method: 'POST',
+      const response = await fetch('/api/add-job', {
+        method: 'PUT', // Use PUT method for updating
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingJob),
+        body: JSON.stringify({
+          id: editingJob._id, // Ensure the ID is included
+          title: editingJob.title,
+          description: editingJob.description,
+          active: editingJob.active // Include active status if needed
+        }),
       });
-      setEditingJob(null);
-      onJobUpdate();
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update job description');
+      }
+
+      setEditingJob(null); // Clear the editing state
+      onJobUpdate(); // Refresh the job list
     } catch (error) {
       console.error('Error updating job:', error);
+      alert(`Failed to update job: ${error.message}`);
     }
   };
 
+
   return (
     <div className="space-y-4">
-      {jobs.map((job) => (
-        <div key={job._id} className="bg-white shadow-md rounded-lg p-6">
+      <input
+        type="text"
+        placeholder="Search jobs..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full p-2 mb-4 border rounded dark:bg-gray-700 dark:text-white"
+      />
+      {filteredJobs.map((job) => (
+        <motion.div
+          key={job._id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6"
+        >
           {editingJob && editingJob._id === job._id ? (
             <form onSubmit={handleSave} className="space-y-4">
               <input
@@ -61,12 +120,14 @@ export default function JobList({ jobs, onJobUpdate }) {
                 value={editingJob.title}
                 onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })}
                 className="w-full p-2 border rounded"
+                required
               />
               <textarea
                 value={editingJob.description}
                 onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })}
                 className="w-full p-2 border rounded"
                 rows="4"
+                required
               />
               <div className="flex justify-end space-x-2">
                 <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Save</button>
@@ -94,7 +155,7 @@ export default function JobList({ jobs, onJobUpdate }) {
               </div>
             </>
           )}
-        </div>
+        </motion.div>
       ))}
     </div>
   );

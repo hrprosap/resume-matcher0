@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ApplicationChart from './ApplicationChart';
+import SkeletonLoader from './SkeletonLoader';
 
 export default function ApplicationList({ activeJobId }) {
   const [applications, setApplications] = useState([]);
@@ -35,8 +37,8 @@ export default function ApplicationList({ activeJobId }) {
   }
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Applications</h2>
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-white">Applications</h2>
       <div className="flex flex-wrap items-center mb-4 space-x-4">
         <div>
           <label className="mr-2 text-gray-600">Minimum Score:</label>
@@ -69,22 +71,28 @@ export default function ApplicationList({ activeJobId }) {
         </div>
       </div>
       {isLoading ? (
-        <p className="text-center text-gray-600">Loading applications...</p>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <SkeletonLoader key={i} />
+          ))}
+        </div>
       ) : (
         <>
+          
           <ul className="space-y-4">
             {applications.map((application) => (
-              <li key={application._id} className="bg-white shadow-md rounded-lg p-6">
+              <li key={application._id} className="bg-white dark:bg-gray-700 shadow-md rounded-lg p-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <p><strong className="text-gray-700">Applicant Email:</strong> {application.applicantEmail}</p>
-                  <p><strong className="text-gray-700">Job Title:</strong> {application.jobTitle}</p>
-                  <p><strong className="text-gray-700">Score:</strong> <span className="text-lg font-semibold">{application.score}</span></p>
-                  <p><strong className="text-gray-700">Date:</strong> {new Date(application.timestamp).toLocaleString()}</p>
+                  <p><strong className="text-gray-700 dark:text-gray-300">Applicant Email:</strong> <span className="dark:text-white">{application.applicantEmail}</span></p>
+                  <p><strong className="text-gray-700 dark:text-gray-300">Job Title:</strong> <span className="dark:text-white">{application.jobTitle}</span></p>
+                  <p><strong className="text-gray-700 dark:text-gray-300">Score:</strong> <span className="text-lg font-semibold dark:text-white">{application.score}</span></p>
+                  <p><strong className="text-gray-700 dark:text-gray-300">Date:</strong> <span className="dark:text-white">{new Date(application.timestamp).toLocaleString()}</span></p>
+                  <p><strong className="text-gray-700 dark:text-gray-300">Subject Line:</strong> <span className="dark:text-white">{application.subjectLine}</span></p>
                 </div>
                 <div className="mt-4">
                   <a
                     href={`/api/download-resume?emailId=${application.emailId}`}
-                    className="text-blue-500 hover:text-blue-700 font-medium"
+                    className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

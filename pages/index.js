@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { parseCookies } from 'nookies';
 import ApplicationList from '../components/ApplicationList';
-import ProcessedEmails from '../components/ProcessedEmails';
 import JobList from '../components/JobList';
+import Navbar from '../components/Navbar';
+import FloatingActionButton from '../components/FloatingActionButton';
+import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import ApplicationChart from '../components/ApplicationChart';
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [processedEmails, setProcessedEmails] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [activeJobId, setActiveJobId] = useState(null);
-  const [hrEmail, setHrEmail] = useState('');
-  const [minMatchScore, setMinMatchScore] = useState(7);
+  const [applications, setApplications] = useState([]);
 
   useEffect(() => {
     checkAuthStatus();
@@ -26,59 +28,6 @@ export default function Home() {
     setIsAuthenticated(data.isAuthenticated);
   };
 
-  const handleAuthenticate = () => {
-    window.location.href = '/api/auth/google';
-  };
-
-  const handleProcessEmails = async () => {
-    if (!isAuthenticated) {
-      console.log("Not authenticated, showing alert");
-      alert("Please authenticate with Google first.");
-      return;
-    }
-    if (!activeJobId) {
-      console.log("No active job selected, showing alert");
-      alert("Please select an active job first.");
-      return;
-    }
-    console.log("Starting email processing...");
-    setIsProcessing(true);
-    try {
-      console.log("Sending request to /api/process-emails");
-      const response = await fetch('/api/process-emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ activeJobId }),
-      });
-      console.log("Received response from /api/process-emails");
-      const data = await response.json();
-      console.log("Response data:", data);
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process emails');
-      }
-      setProcessedEmails(data.processedEmails);
-      if (data.processedEmails.length === 0) {
-        console.log("No applicants found for this job posting");
-        alert("No applicants found for this job posting.");
-      } else {
-        console.log(`${data.message} ${data.processedEmails.length} applicants found.`);
-        alert(`${data.message} ${data.processedEmails.length} applicants found.`);
-      }
-    } catch (error) {
-      console.error('Error processing emails:', error);
-      if (error.message.includes('authentication') || error.message.includes('token') || error.response?.status === 401) {
-        console.log("Authentication error, redirecting to Google auth");
-        window.location.href = '/api/auth/google';
-      } else {
-        alert(`An error occurred while processing emails: ${error.message}`);
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const fetchJobs = async () => {
     try {
       const response = await fetch('/api/jobs');
@@ -86,102 +35,149 @@ export default function Home() {
       setJobs(data);
       const activeJob = data.find(job => job.active);
       setActiveJobId(activeJob ? activeJob._id : null);
+      if (activeJob) {
+        fetchApplications(activeJob._id);
+      }
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
   };
 
-  const handleAddJob = async (e) => {
-    e.preventDefault();
+  const fetchApplications = async (jobId) => {
+    try {
+      const response = await fetch(`/api/applications?jobId=${jobId}`);
+      const data = await response.json();
+      setApplications(data.applications);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    }
+  };
+
+  const handleAuthenticate = () => {
+    window.location.href = '/api/auth/google';
+  };
+
+  const handleProcessEmails = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please authenticate with Google first.");
+      return;
+    }
+    if (!activeJobId) {
+      toast.error("Please select an active job first.");
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/process-emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ activeJobId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process emails');
+      }
+      toast.success(`${data.message} Applicants processed successfully.`);
+    } catch (error) {
+      console.error('Error processing emails:', error);
+      toast.error(`An error occurred while processing emails: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  const onSubmit = async (data) => {
     try {
       const response = await fetch('/api/add-job', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: jobTitle, description: jobDescription, active: true }),
+        body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error('Failed to add job description');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add job description');
       }
-      alert('Job description added successfully');
-      setJobTitle('');
-      setJobDescription('');
+      toast.success('Job description added successfully');
+      reset();
+      fetchJobs();
     } catch (error) {
       console.error('Error adding job description:', error);
-      alert(`An error occurred while adding job description: ${error.message}`);
+      toast.error(`An error occurred while adding job description: ${error.message}`);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl bg-gray-100 rounded-lg shadow-lg">
-      <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Resume Matcher Dashboard</h1>
-      {!isAuthenticated ? (
-        <button
-          onClick={handleAuthenticate}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out"
-        >
-          Authenticate with Google
-        </button>
-      ) : (
-        <>
-          <div className="flex justify-between items-center mb-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <Navbar isAuthenticated={isAuthenticated} />
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <h1 className="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-white">PROSAPIENS AI RESUME MATCHER</h1>
+        {!isAuthenticated ? (
+          <div className="text-center bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+            <p className="mb-4 text-gray-700 dark:text-gray-300">Welcome to PROSAPIENS AI RESUME MATCHER. Please login to get started.</p>
             <button
-              onClick={handleProcessEmails}
-              disabled={isProcessing || !activeJobId}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out disabled:opacity-50"
+              onClick={handleAuthenticate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out"
             >
-              {isProcessing ? 'Processing...' : 'Process New Emails'}
+              Login with Google
             </button>
-            <input
-              type="email"
-              value={hrEmail}
-              onChange={(e) => setHrEmail(e.target.value)}
-              placeholder="Enter HR Email"
-              className="border rounded p-2 w-1/3"
-            />
-            <input
-              type="number"
-              value={minMatchScore}
-              onChange={(e) => setMinMatchScore(e.target.value)}
-              placeholder="Min Match Score"
-              className="border rounded p-2 w-1/4"
-            />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h2 className="text-2xl font-semibold mb-4 text-gray-700">Job Postings</h2>
-              <JobList jobs={jobs} onJobUpdate={fetchJobs} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <section id="jobs" className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-white">Job Postings</h2>
+                <JobList jobs={jobs} onJobUpdate={fetchJobs} />
+              </section>
+              <section id="applications" className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-white">Applications</h2>
+                <ApplicationList activeJobId={activeJobId} />
+              </section>
             </div>
             <div>
-              <h2 className="text-2xl font-semibold mb-4 text-gray-700">Add New Job</h2>
-              <form onSubmit={handleAddJob} className="mb-8 bg-white shadow-md rounded px-8 pt-6 pb-8">
-                <input
-                  type="text"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  placeholder="Enter job title"
-                  className="w-full p-2 border rounded mb-4"
-                />
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Enter job description"
-                  className="w-full p-2 border rounded mb-4"
-                  rows="4"
-                />
-                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full transition duration-300 ease-in-out">
-                  Add Job Description
-                </button>
-              </form>
+              <section className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-white">Add New Job</h3>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" id="add-job-form">
+                  <input
+                    {...register('title', { required: 'Job title is required' })}
+                    placeholder="Enter job title"
+                    className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  />
+                  {errors.title && <p className="text-red-500">{errors.title.message}</p>}
+                  <textarea
+                    {...register('description', { required: 'Job description is required' })}
+                    placeholder="Enter job description"
+                    className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                    rows="4"
+                  />
+                  {errors.description && <p className="text-red-500">{errors.description.message}</p>}
+                  <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full transition duration-300 ease-in-out">
+                    Add Job Description
+                  </button>
+                </form>
+              </section>
+              <button
+                onClick={handleProcessEmails}
+                disabled={isProcessing || !activeJobId}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out disabled:opacity-50 w-full"
+              >
+                {isProcessing ? 'Processing...' : 'Process New Emails'}
+              </button>
+              <div className="mt-6"> {/* Add margin-top for spacing */}
+                <ApplicationChart applications={applications} />
+              </div>
             </div>
           </div>
-          <div className="mt-12">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-700">Applications</h2>
-            <ProcessedEmails emails={processedEmails} />
-          </div>
-        </>
-      )}
+        )}
+      </div>
+      <FloatingActionButton onClick={() => {
+        document.querySelector('#add-job-form').scrollIntoView({ behavior: 'smooth' });
+      }} />
     </div>
   );
 }

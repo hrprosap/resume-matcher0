@@ -1,7 +1,14 @@
-import '../styles/globals.css'
+import { ThemeProvider } from 'next-themes';
+import { Toaster } from 'react-hot-toast';
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
+  return (
+    <ThemeProvider attribute="class">
+      <Component {...pageProps} />
+      <Toaster />
+    </ThemeProvider>
+  );
 }
 
-export default MyApp
+export default MyApp;

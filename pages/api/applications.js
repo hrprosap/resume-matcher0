@@ -25,7 +25,8 @@ export default async function handler(req, res) {
         applicantEmail: 1,
         jobTitle: 1,
         score: 1,
-        timestamp: 1
+        timestamp: 1,
+        subjectLine: 1  // Add this line to include the subject line
       })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))

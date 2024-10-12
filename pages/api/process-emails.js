@@ -8,16 +8,7 @@ import { parseCookies, setCookie } from 'nookies';
 import { google } from 'googleapis';
 import { refreshAccessToken } from './auth/google'; // Make sure to export the refreshAccessToken function
 
-const nodemailer = require('nodemailer'); // Import nodemailer at the top
 
-// Create a transporter for sending emails
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // Use Gmail service
-  auth: {
-    user: process.env.GMAIL_USER, // Your Gmail address
-    pass: process.env.GMAIL_PASS, // Your Gmail password or app password
-  },
-});
 
 export default async function handler(req, res) {
   console.log('Process emails handler called');
@@ -152,11 +143,6 @@ export default async function handler(req, res) {
 
           processedEmails.push(applicationData);
 
-          if (score >= 7) {
-            console.log(`Forwarding email ${message.id} to HR (score: ${score})`);
-            // Implement email forwarding logic here
-          }
-
           // Mark the email as read after processing
           await gmail.users.messages.modify({
             userId: 'me',
@@ -165,28 +151,6 @@ export default async function handler(req, res) {
               removeLabelIds: ['UNREAD']
             }
           });
-
-          // Inside the email processing loop
-          if (score >= 7) {
-            const mailOptions = {
-              from: process.env.GMAIL_USER,
-              to: hrEmail,
-              subject: `New Application for ${jobDescription.title}`,
-              text: `A new application has been received:\n\n` +
-                    `Applicant Email: ${emailMetadata.from}\n` +
-                    `Job Title: ${jobDescription.title}\n` +
-                    `Score: ${score}\n` +
-                    `Subject Line: ${emailMetadata.subject}\n\n` +
-                    `Resume Attachment: [Download Here](https://yourdomain.com/api/download-resume?emailId=${message.id})`,
-            };
-
-            try {
-              await transporter.sendMail(mailOptions);
-              console.log(`Email forwarded to HR: ${hrEmail}`);
-            } catch (error) {
-              console.error('Error forwarding email to HR:', error);
-            }
-          }
         } catch (emailError) {
           console.error(`Error processing email ${message.id}:`, emailError);
           // Consider adding this email to a list of failed processes
