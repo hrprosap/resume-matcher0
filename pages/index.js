@@ -80,6 +80,9 @@ export default function Home() {
         throw new Error(data.error || 'Failed to process emails');
       }
       toast.success(`${data.message} Applicants processed successfully.`);
+
+      const { applications } = data; // Get the updated applications
+      setApplications(applications); // Update the applications state
     } catch (error) {
       console.error('Error processing emails:', error);
       toast.error(`An error occurred while processing emails: ${error.message}`);

@@ -159,10 +159,19 @@ export default async function handler(req, res) {
     }
 
     console.log('All emails processed successfully.');
-    res.status(200).json({
-      message: messages.length === 0 ? 'No new emails found. Showing previous applicants.' : 'Emails processed successfully',
-      processedEmails: processedEmails
-    });
+
+    // After processing emails, fetch the updated applications
+    const applications = await db.collection('applications')
+      .find({ jobId: ObjectId(activeJobId) })
+      .sort({ timestamp: -1 })
+      .toArray();
+
+    if (applications.length === 0) {
+      console.log('No applications found for this job.');
+      return res.status(200).json({ message: 'No applications were found.' });
+    }
+
+    res.status(200).json({ message: 'Emails processed successfully', applications });
   } catch (error) {
     console.error('Error processing emails:', error);
     res.status(500).json({ error: error.message || 'An error occurred while processing emails' });

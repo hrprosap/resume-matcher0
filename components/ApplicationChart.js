@@ -1,10 +1,10 @@
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function ApplicationChart({ applications }) {
+export default function ApplicationChart({ applications = [] }) { // Default to an empty array
   // Pie chart data
   const scoreRanges = {
     Low: applications.filter(app => app.score < 5).length,
-    Medium: applications.filter(app => app.score >= 5 && app.score <= 7).length, // Adjusted to include 7
+    Medium: applications.filter(app => app.score >= 5 && app.score <= 7).length,
     High: applications.filter(app => app.score > 7).length,
   };
 
