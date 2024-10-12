@@ -6,9 +6,7 @@ import { simpleParser } from 'mailparser';
 import { ObjectId } from 'mongodb';
 import { parseCookies, setCookie } from 'nookies';
 import { google } from 'googleapis';
-import { refreshAccessToken } from './auth/google'; // Make sure to export the refreshAccessToken function
-
-
+import { refreshAccessToken } from './auth/google';
 
 export default async function handler(req, res) {
   console.log('Process emails handler called');
@@ -66,7 +64,8 @@ export default async function handler(req, res) {
       }
     } catch (refreshError) {
       console.error('Error refreshing access token:', refreshError);
-      return res.status(401).json({ error: 'Failed to refresh access token. Please re-authenticate.' });
+      // Redirect to reauthentication page
+      return res.redirect('/api/auth/google');
     }
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
