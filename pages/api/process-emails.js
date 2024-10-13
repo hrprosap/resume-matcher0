@@ -109,6 +109,11 @@ export default async function handler(req, res) {
         .find({ jobId: jobDescription._id })
         .sort({ timestamp: -1 })
         .toArray();
+
+      return res.status(200).json({
+        message: 'No new emails found. Showing previous applicants.',
+        applications: processedEmails
+      });
     } else {
       // Process new emails
       for (const message of messages) {
@@ -155,6 +160,11 @@ export default async function handler(req, res) {
           // Consider adding this email to a list of failed processes
         }
       }
+
+      return res.status(200).json({
+        message: `${processedEmails.length} new emails processed successfully.`,
+        applications: processedEmails
+      });
     }
 
     console.log('All emails processed successfully.');
@@ -167,10 +177,10 @@ export default async function handler(req, res) {
 
     if (applications.length === 0) {
       console.log('No applications found for this job.');
-      return res.status(200).json({ message: 'No applications were found.' });
+      return res.status(200).json({ message: 'No new emails found. Fetching previous applicants.', applications });
     }
 
-    res.status(200).json({ message: 'Emails processed successfully', applications });
+    res.status(200).json({ message: `${processedEmails.length}  emails processed successfully`, applications });
   } catch (error) {
     console.error('Error processing emails:', error);
     res.status(500).json({ error: error.message || 'An error occurred while processing emails' });

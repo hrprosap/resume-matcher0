@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import useDebounce from '../hooks/useDebounce';
 
 export default function JobList({ jobs, onJobUpdate }) {
   const [editingJob, setEditingJob] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job =>
+      job.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      job.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [jobs, debouncedSearchTerm]);
 
-
-  const handleStatusChange = async (id, active) => {
+  const handleStatusChange = useCallback(async (id, active) => {
     try {
       if (active) {
         // Deactivate all other jobs
@@ -32,7 +35,7 @@ export default function JobList({ jobs, onJobUpdate }) {
     } catch (error) {
       console.error('Error updating job status:', error);
     }
-  };
+  }, []);
 
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this job?')) {
