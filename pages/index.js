@@ -69,11 +69,7 @@ export default function Home() {
       if (!response.ok) throw new Error(data.error || 'Failed to process emails');
 
       // Show the appropriate message based on the response
-      if (data.message.includes('No new emails found')) {
-        alert(data.message); // Show alert for no new emails
-      } else {
-        alert(data.message); // Show alert for new emails processed
-      }
+      alert(data.message); // Show alert for new emails processed or no new emails found
 
       setApplications(data.applications);
     } catch (error) {
@@ -94,12 +90,12 @@ export default function Home() {
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Failed to add job description');
-      toast.success('Job description added successfully');
+      alert('Job description added successfully');
       reset();
       fetchJobs();
     } catch (error) {
       console.error('Error adding job description:', error);
-      toast.error(`An error occurred: ${error.message}`);
+      alert(`An error occurred: ${error.message}`);
     }
   };
 
