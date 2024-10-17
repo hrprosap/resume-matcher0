@@ -65,7 +65,18 @@ export default function ApplicationList({ activeJobId }) {
                 <p><strong className="text-gray-700 dark:text-gray-300">Subject Line:</strong> <span className="dark:text-white">{application.subjectLine}</span></p>
               </div>
               <div className="mt-4">
-                <a href={`/api/download-resume?emailId=${application.emailId}`} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium" target="_blank" rel="noopener noreferrer">
+                <p><strong className="text-gray-700 dark:text-gray-300">Summary:</strong> <span className="dark:text-white">{application.summary || 'No summary available'}</span></p>
+                <p><strong className="text-gray-700 dark:text-gray-300">Missing Skills:</strong></p>
+                <ul className="list-disc list-inside dark:text-white">
+                  {application.missingSkills && application.missingSkills.length > 0 ? (
+                    application.missingSkills.map((skill, index) => (
+                      <li key={index}>{skill}</li>
+                    ))
+                  ) : (
+                    <li>No missing skills identified</li>
+                  )}
+                </ul>
+                <a href={`/api/download-resume?emailId=${application.emailId}`} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium mt-2 inline-block" target="_blank" rel="noopener noreferrer">
                   Download Resume
                 </a>
               </div>
