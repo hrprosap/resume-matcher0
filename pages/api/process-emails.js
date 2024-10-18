@@ -1,3 +1,12 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
+    responseLimit: false,
+  },
+};
+
 import { extractResumeText } from '../../lib/emailParser';
 import { getGmailService, getEmailContent, getEmailMetadata } from '../../lib/gmail';
 import { connectToDatabase } from '../../lib/mongodb';
@@ -85,7 +94,7 @@ export default async function handler(req, res) {
       response = await gmail.users.messages.list({
         userId: 'me',
         q: `subject:(${jobDescription.title}) OR subject:(${jobDescription.title.toUpperCase()}) OR subject:(${jobDescription.title.toLowerCase()}) is:unread`, // Updated query for flexible matching
-        maxResults: 100// Adjust this number as needed
+        maxResults: 5// Adjust this number as needed
       });
       console.log('Gmail API response:', JSON.stringify(response, null, 2));
     } catch (error) {
@@ -168,21 +177,6 @@ export default async function handler(req, res) {
         applications: processedEmails
       });
     }
-
-    console.log('All emails processed successfully.');
-
-    // After processing emails, fetch the updated applications
-    const applications = await db.collection('applications')
-      .find({ jobId: ObjectId(activeJobId) })
-      .sort({ timestamp: -1 })
-      .toArray();
-
-    if (applications.length === 0) {
-      console.log('No applications found for this job.');
-      return res.status(200).json({ message: 'No new emails found. Fetching previous applicants.', applications });
-    }
-
-    res.status(200).json({ message: `${processedEmails.length}  emails processed successfully`, applications });
   } catch (error) {
     console.error('Error processing emails:', error);
     res.status(500).json({ error: error.message || 'An error occurred while processing emails' });

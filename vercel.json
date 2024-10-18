@@ -1,0 +1,17 @@
+{
+    "functions": {
+      "api/process-emails.js": {
+        "maxDuration": 60
+      }
+    },
+    "routes": [
+      {
+        "src": "/api/process-emails",
+        "dest": "/api/process-emails.js",
+        "methods": ["POST"],
+        "headers": {
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+  ]
+}

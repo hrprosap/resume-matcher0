@@ -77,11 +77,17 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activeJobId }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to process emails');
-
-      alert(data.message);
-      setApplications(data.applications);
+      
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to process emails');
+        alert(data.message);
+        setApplications(data.applications);
+      } else {
+        const text = await response.text();
+        throw new Error('Server returned non-JSON response: ' + text);
+      }
     } catch (error) {
       console.error('Error processing emails:', error);
       alert(`An error occurred: ${error.message}`);
