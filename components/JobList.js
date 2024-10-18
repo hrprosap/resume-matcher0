@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import useDebounce from '../hooks/useDebounce';
 
 export default function JobList({ jobs, onJobUpdate }) {
@@ -107,59 +107,61 @@ export default function JobList({ jobs, onJobUpdate }) {
         onChange={(e) => setSearchTerm(e.target.value)}
         className="w-full p-2 mb-4 border rounded dark:bg-gray-700 dark:text-white"
       />
-      {filteredJobs.map((job) => (
-        <motion.div
-          key={job._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6"
-        >
-          {editingJob && editingJob._id === job._id ? (
-            <form onSubmit={handleSave} className="space-y-4">
-              <input
-                type="text"
-                value={editingJob.title}
-                onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })}
-                className="w-full p-2 border rounded"
-                required
-              />
-              <textarea
-                value={editingJob.description}
-                onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })}
-                className="w-full p-2 border rounded"
-                rows="4"
-                required
-              />
-              <div className="flex justify-end space-x-2">
-                <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Save</button>
-                <button onClick={() => setEditingJob(null)} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
-              <p className="text-gray-600 mb-4">{job.description.substring(0, 100)}...</p>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={job.active}
-                    onChange={(e) => handleStatusChange(job._id, e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Active</span>
-                </label>
-                <div className="space-x-2">
-                  <button onClick={() => handleEdit(job)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Edit</button>
-                  <button onClick={() => handleDelete(job._id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Delete</button>
+      <AnimatePresence>
+        {filteredJobs.map((job) => (
+          <motion.div
+            key={job._id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6"
+          >
+            {editingJob && editingJob._id === job._id ? (
+              <form onSubmit={handleSave} className="space-y-4">
+                <input
+                  type="text"
+                  value={editingJob.title}
+                  onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <textarea
+                  value={editingJob.description}
+                  onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  rows="4"
+                  required
+                />
+                <div className="flex justify-end space-x-2">
+                  <button type="submit" className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded">Save</button>
+                  <button onClick={() => setEditingJob(null)} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
                 </div>
-              </div>
-            </>
-          )}
-        </motion.div>
-      ))}
+              </form>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
+                <p className="text-gray-600 mb-4">{job.description.substring(0, 100)}...</p>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={job.active}
+                      onChange={(e) => handleStatusChange(job._id, e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Active</span>
+                  </label>
+                  <div className="space-x-2">
+                    <button onClick={() => handleEdit(job)} className="bg-primary-500 hover:bg-primary-600 text-white px-3 py-1 rounded text-sm">Edit</button>
+                    <button onClick={() => handleDelete(job._id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Delete</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

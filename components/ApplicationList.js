@@ -60,9 +60,22 @@ export default function ApplicationList({ activeJobId }) {
               <div className="grid grid-cols-2 gap-4">
                 <p><strong className="text-gray-700 dark:text-gray-300">Applicant Email:</strong> <span className="dark:text-white">{application.applicantEmail}</span></p>
                 <p><strong className="text-gray-700 dark:text-gray-300">Job Title:</strong> <span className="dark:text-white">{application.jobTitle}</span></p>
-                <p><strong className="text-gray-700 dark:text-gray-300">Score:</strong> <span className="text-lg font-semibold dark:text-white">{application.score}</span></p>
+                <p><strong className="text-gray-700 dark:text-gray-300">Score:</strong> <span className="text-lg font-semibold dark:text-white">{application.score || 'N/A'}</span></p>
                 <p><strong className="text-gray-700 dark:text-gray-300">Date:</strong> <span className="dark:text-white">{new Date(application.timestamp).toLocaleString()}</span></p>
-                <p><strong className="text-gray-700 dark:text-gray-300">Subject Line:</strong> <span className="dark:text-white">{application.subjectLine}</span></p>
+                <p><strong className="text-gray-700 dark:text-gray-300">Subject Line:</strong> <span className="dark:text-white">{application.subjectLine || 'N/A'}</span></p>
+              </div>
+              <div className="mt-4">
+                <p><strong className="text-gray-700 dark:text-gray-300">Summary:</strong> <span className="dark:text-white">{application.summary || 'No summary available'}</span></p>
+                <p><strong className="text-gray-700 dark:text-gray-300">Missing Skills:</strong></p>
+                <ul className="list-disc list-inside dark:text-white">
+                  {Array.isArray(application.missingSkills) && application.missingSkills.length > 0 ? (
+                    application.missingSkills.map((skill, index) => (
+                      <li key={index}>{skill}</li>
+                    ))
+                  ) : (
+                    <li>No missing skills identified</li>
+                  )}
+                </ul>
               </div>
               <div className="mt-4">
                 <a href={`/api/download-resume?emailId=${application.emailId}`} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium" target="_blank" rel="noopener noreferrer">
@@ -74,9 +87,9 @@ export default function ApplicationList({ activeJobId }) {
         </ul>
       )}
       <div className="mt-8 flex justify-center items-center space-x-4">
-        <button onClick={() => setPage(page - 1)} disabled={page === 1} className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100">Previous</button>
+        <button onClick={() => setPage(page - 1)} disabled={page === 1} className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md disabled:opacity-50">Previous</button>
         <span className="text-gray-600">Page {page} of {totalPages}</span>
-        <button onClick={() => setPage(page + 1)} disabled={page === totalPages} className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100">Next</button>
+        <button onClick={() => setPage(page + 1)} disabled={page === totalPages} className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md disabled:opacity-50">Next</button>
       </div>
     </div>
   );

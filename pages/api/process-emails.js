@@ -127,19 +127,21 @@ export default async function handler(req, res) {
           console.log('Job Description:', jobDescription.description.substring(0, 200) + '...');
 
           // Get the score for the resume
-          const score = await getResumeScore(resumeText, jobDescription.description, db, message.id);
-          console.log(`Email ${message.id} received a score of ${score}`);
+          const result = await getResumeScore(resumeText, jobDescription.description, db, message.id);
+          console.log(`Email ${message.id} processed:`, result);
 
           const applicationData = {
             emailId: message.id,
             applicantEmail: emailMetadata.from,
             jobTitle: jobDescription.title,
             subjectLine: emailMetadata.subject,
-            score: score,
+            score: result.score,
+            summary: result.summary,
+            missingSkills: result.missingSkills,
             resumeText: resumeText,
             timestamp: new Date(),
-            jobId: jobDescription._id, // Associate the application with the job
-            applicationId: new ObjectId() // Generate a unique ID for each application
+            jobId: jobDescription._id,
+            applicationId: new ObjectId()
           };
 
           // Insert the application into the database
