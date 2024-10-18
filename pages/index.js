@@ -29,6 +29,10 @@ export default function Home() {
     const response = await fetch('/api/auth/check');
     const data = await response.json();
     setIsAuthenticated(data.isAuthenticated);
+    if (!data.isAuthenticated) {
+      // Redirect to login if not authenticated
+      window.location.href = '/api/auth/google';
+    }
   };
 
   const fetchJobs = async () => {
@@ -55,10 +59,17 @@ export default function Home() {
   };
 
   const handleProcessEmails = async () => {
-    if (!isAuthenticated || !activeJobId) {
-      alert("Please authenticate and select an active job first.");
+    if (!isAuthenticated) {
+      // Redirect to Google authentication
+      window.location.href = '/api/auth/google';
       return;
     }
+    
+    if (!activeJobId) {
+      alert("Please select an active job first.");
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       const response = await fetch('/api/process-emails', {
@@ -69,9 +80,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to process emails');
 
-      // Show the appropriate message based on the response
-      alert(data.message); // Show alert for new emails processed or no new emails found
-
+      alert(data.message);
       setApplications(data.applications);
     } catch (error) {
       console.error('Error processing emails:', error);
